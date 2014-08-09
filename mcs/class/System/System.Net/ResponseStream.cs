@@ -77,24 +77,8 @@ namespace System.Net {
 		public override void Close ()
 		{
 			if (disposed == false) {
+				Flush ();
 				disposed = true;
-				byte [] bytes = null;
-				MemoryStream ms = GetHeaders (true);
-				bool chunked = response.SendChunked;
-				if (ms != null) {
-					long start = ms.Position;
-					if (chunked && !trailer_sent) {
-						bytes = GetChunkSizeBytes (0, true);
-						ms.Position = ms.Length;
-						ms.Write (bytes, 0, bytes.Length);
-					}
-					InternalWrite (ms.GetBuffer (), (int) start, (int) (ms.Length - start));
-					trailer_sent = true;
-				} else if (chunked && !trailer_sent) {
-					bytes = GetChunkSizeBytes (0, true);
-					InternalWrite (bytes, 0, bytes.Length);
-					trailer_sent = true;
-				}
 				response.Close ();
 			}
 		}
@@ -113,6 +97,25 @@ namespace System.Net {
 
 		public override void Flush ()
 		{
+			if (disposed == false) {
+				byte [] bytes = null;
+				MemoryStream ms = GetHeaders (true);
+				bool chunked = response.SendChunked;
+				if (ms != null) {
+					long start = ms.Position;
+					if (chunked && !trailer_sent) {
+						bytes = GetChunkSizeBytes (0, true);
+						ms.Position = ms.Length;
+						ms.Write (bytes, 0, bytes.Length);
+					}
+					InternalWrite (ms.GetBuffer (), (int) start, (int) (ms.Length - start));
+					trailer_sent = true;
+				} else if (chunked && !trailer_sent) {
+					bytes = GetChunkSizeBytes (0, true);
+					InternalWrite (bytes, 0, bytes.Length);
+					trailer_sent = true;
+				}
+			}
 		}
 
 		static byte [] crlf = new byte [] { 13, 10 };
